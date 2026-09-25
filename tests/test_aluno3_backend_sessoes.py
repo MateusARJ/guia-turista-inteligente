@@ -267,6 +267,78 @@ class TestAluno3BackendSessoes(unittest.TestCase):
         self.assertEqual(len(viagens), 1)
         self.assertEqual(viagens[0]["id"], "keep-456")
 
+    @patch("app.buscar_coordenadas")
+    @patch("app.obter_clima")
+    @patch("app.obter_percurso")
+    @patch("app.obter_guia_destino_com_diagnostico")
+    def test_10_gemini_timeout_toast_erro(
+        self,
+        mock_guia,
+        mock_percurso,
+        mock_clima,
+        mock_coord,
+    ):
+        """Valida que falha no tempo de requisição do Gemini gera toast de erro no template."""
+        mock_coord.return_value = (-8.0, -34.0, "Recife - PE")
+        mock_clima.return_value = {
+            "temperatura": "26 °C",
+            "umidade": "80%",
+            "vento": "15 km/h",
+        }
+        mock_percurso.return_value = {"distancia": "500 km", "tempo": "7h"}
+        # Simula resposta de timeout do Gemini com diagnóstico de fallback
+        mock_guia.return_value = (
+            "🧭 Guia de contingência para Recife",
+            {
+                "status": "fallback",
+                "modelo": "gemini-3.6-flash",
+                "fallback_utilizado": True,
+                "motivo": "timeout",
+            },
+        )
+
+        self.client.get("/auth/demo")
+
+        # Criação de viagem
+        response = self.client.post(
+            "/viagens/criar",
+            data={
+                "origem_cidade": "João Pessoa",
+                "origem_uf": "PB",
+                "destino_cidade": "Recife",
+                "destino_uf": "PE",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.headers["Location"], "/")
+
+        # Segue o redirecionamento (GET /)
+        follow_response = self.client.get("/")
+        self.assertEqual(follow_response.status_code, 200)
+        html = follow_response.data.decode("utf-8")
+
+        # Verifica presença da estrutura do toast de erro
+        self.assertIn("toast-erro", html)
+        self.assertIn("toastContainer", html)
+        self.assertIn("Gemini excedeu o tempo limite", html)
+
+    def test_11_elementos_loading_card_e_toast_presentes(self):
+        """Valida que o card de carregamento e container de toasts estão presentes no HTML."""
+        self.client.get("/auth/demo")
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        html = response.data.decode("utf-8")
+
+        # Valida container do toast
+        self.assertIn('id="toastContainer"', html)
+        self.assertIn("toast-container", html)
+
+        # Valida card de estado de carregamento
+        self.assertIn('id="cardLoading"', html)
+        self.assertIn("viagem-card-loading", html)
+        self.assertIn("spinner-inline", html)
+        self.assertIn("skeleton-linhas", html)
+
 
 if __name__ == "__main__":
     unittest.main()

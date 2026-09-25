@@ -10,7 +10,16 @@ from datetime import datetime, timezone
 from typing import Any
 
 import httpx
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+from flask import (
+    Flask,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 
 from config import (
     DATA_DIR,
@@ -495,8 +504,23 @@ def criar_viagem():
         # Persistência via função do Aluno 4 (memória para visitante ou base JSON para usuário logado)
         adicionar_viagem_usuario(user_id, viagem, usuario)
 
+        # Feedback defensivo via Toast se o Gemini falhar por tempo limite (timeout)
+        if diagnostico and (
+            diagnostico.get("motivo") == "timeout"
+            or "timeout" in str(diagnostico.get("motivo", "")).lower()
+        ):
+            flash(
+                "O serviço Gemini excedeu o tempo limite da requisição. Um guia de contingência foi gerado.",
+                "erro",
+            )
+
     except Exception as err:  # noqa: BLE001 - barreira defensiva para falhas de orquestração externa
         app.logger.error("Falha ao orquestrar serviços de viagem: %s", err)
+        if "timeout" in str(err).lower():
+            flash(
+                "O serviço Gemini excedeu o tempo limite da requisição. Um guia de contingência foi gerado.",
+                "erro",
+            )
     finally:
         with lock_requisicoes:
             requisicoes_ativas.discard(chave_idempotencia)
