@@ -44,6 +44,18 @@ pip install -r requirements.txt
 
 Configure as variáveis no seu terminal:
 
+Você também pode preencher `GEMINI_API_KEY` no arquivo `.env` na raiz do
+projeto. Se ele não existir, copie `.env.example` para `.env`. O arquivo é
+carregado automaticamente por `config.py` e ignorado pelo Git. Variáveis já
+definidas no terminal têm prioridade sobre o `.env`. Reinicie a aplicação
+depois de alterar a chave.
+
+Para priorizar a geração pela IA, a espera padrão agora é de 60 segundos.
+Ela pode ser ajustada no `.env` com `GEMINI_TIMEOUT_SEGUNDOS=60` (até 120).
+Use `GEMINI_TIMEOUT_SEGUNDOS=6` para reproduzir o limite original da issue #1.
+O timeout HTTP nunca é inferior a 10 segundos, mínimo exigido pelo provedor.
+Em caso de erro ou de espera esgotada, o módulo continua retornando contingência.
+
 === "Linux / macOS"
     ```bash
     export GEMINI_API_KEY="SUA_CHAVE_GEMINI_AQUI"
@@ -95,6 +107,53 @@ Acesse a aplicação no navegador em:
 ---
 
 ## 🧪 Qualidade de Código e Linter
+
+### Atalhos de testes e demonstrações (pytest + Taskipy)
+
+Os testes automatizados ficam em `tests/`. As demonstrações manuais ficam em
+`scripts/testar.py`, executado pelos atalhos abaixo ou por `python -m scripts.testar`.
+
+Na raiz do projeto, ative o ambiente e instale as dependências:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+task --list
+```
+
+| Comando | Resultado |
+| --- | --- |
+| `task test` | Todos os testes automatizados, sem rede nem chave real |
+| `task test-ia` | Testes automatizados de IA e contingência |
+| `task test-servicos` | Testes automatizados de clima e percurso |
+| `task fallback` | Mostra o guia de contingência, sem alterar o `.env` |
+| `task ia` | Mostra uma resposta real do Gemini e seu diagnóstico |
+| `task clima` | Consulta o clima real em Recife |
+| `task percurso` | Consulta uma rota real de Recife a João Pessoa |
+| `task demo` | Executa as quatro demonstrações acima de uma vez |
+| `task lint` / `task tipos` | Ruff / Mypy do projeto inteiro |
+
+Exemplos:
+
+```powershell
+task ia --destino "Olinda, PE"
+task fallback --destino "Natal, RN"
+task clima --lat -8.05 --lon -34.9
+task percurso --lat -8.05 --lon -34.9 --lat-d -3.85 --lon-d -32.42
+task test -v
+```
+
+O texto de `--destino` é usado apenas pela IA; clima e percurso usam as
+coordenadas numéricas. `task ia` e `task demo` leem a chave do `.env`, podem
+consumir cota e esperam até o timeout configurado. As demonstrações retornam
+código 1 quando um serviço real cai na contingência; `task fallback` retorna
+0, pois nesse comando a contingência é o resultado esperado. `task demo`
+continua mostrando os demais serviços mesmo se algum retornar contingência.
+Os testes automatizados usam fixtures, parametrização e mocks, com acesso
+HTTP real bloqueado. Os cenários anteriores foram reaproveitados.
+
+Ruff e Mypy ainda apontam as pendências preexistentes dos outros alunos;
+os atalhos mostram essas falhas sem ocultá-las.
 
 Para validar o código com as ferramentas da disciplina:
 
