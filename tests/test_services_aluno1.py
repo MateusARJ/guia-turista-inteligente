@@ -3,11 +3,10 @@
 Executável diretamente com 'python tests/test_services_aluno1.py' ou via unittest/pytest.
 """
 
-import os
-from pathlib import Path
 import sys
-from unittest.mock import Mock
 import unittest
+from pathlib import Path
+from unittest.mock import Mock
 
 import httpx
 
@@ -72,7 +71,9 @@ class TestVerificarTokenGoogle(unittest.TestCase):
                 "https://oauth2.googleapis.com/tokeninfo",
             )
             self.assertEqual(request.url.params["id_token"], "jwt_token_valido_123")
-            self.assertTrue(all(v == 4.0 for v in request.extensions["timeout"].values()))
+            self.assertTrue(
+                all(v == 4.0 for v in request.extensions["timeout"].values())
+            )
             return httpx.Response(200, json=payload_google)
 
         with httpx.Client(transport=httpx.MockTransport(responder)) as client:
@@ -84,8 +85,12 @@ class TestVerificarTokenGoogle(unittest.TestCase):
             self.assertEqual(resultado["email"], "turista@exemplo.com")
             self.assertEqual(resultado["name"], "Maria Silva")
             self.assertEqual(resultado["nome"], "Maria Silva")
-            self.assertEqual(resultado["picture"], "https://lh3.googleusercontent.com/avatar.jpg")
-            self.assertEqual(resultado["foto"], "https://lh3.googleusercontent.com/avatar.jpg")
+            self.assertEqual(
+                resultado["picture"], "https://lh3.googleusercontent.com/avatar.jpg"
+            )
+            self.assertEqual(
+                resultado["foto"], "https://lh3.googleusercontent.com/avatar.jpg"
+            )
 
     def test_verificar_token_google_aud_invalido(self) -> None:
         payload_outro_app = {
@@ -96,7 +101,9 @@ class TestVerificarTokenGoogle(unittest.TestCase):
         }
 
         with httpx.Client(
-            transport=httpx.MockTransport(lambda r: httpx.Response(200, json=payload_outro_app))
+            transport=httpx.MockTransport(
+                lambda r: httpx.Response(200, json=payload_outro_app)
+            )
         ) as client:
             self.assertIsNone(verificar_token_google(client, "token_de_outro_app"))
 
@@ -105,7 +112,10 @@ class TestVerificarTokenGoogle(unittest.TestCase):
             transport=httpx.MockTransport(
                 lambda r: httpx.Response(
                     400,
-                    json={"error": "invalid_token", "error_description": "Invalid Value"},
+                    json={
+                        "error": "invalid_token",
+                        "error_description": "Invalid Value",
+                    },
                 )
             )
         ) as client:
@@ -153,7 +163,9 @@ class TestBuscarCoordenadas(unittest.TestCase):
             )
             self.assertEqual(request.url.params["name"], "Teresina")
             self.assertEqual(request.url.params["country_codes"], "BR")
-            self.assertTrue(all(v == 4.0 for v in request.extensions["timeout"].values()))
+            self.assertTrue(
+                all(v == 4.0 for v in request.extensions["timeout"].values())
+            )
             return httpx.Response(200, json=resposta_api)
 
         with httpx.Client(transport=httpx.MockTransport(responder)) as client:
@@ -166,7 +178,9 @@ class TestBuscarCoordenadas(unittest.TestCase):
         resposta_vazia = {"generationtime_ms": 0.12}
 
         with httpx.Client(
-            transport=httpx.MockTransport(lambda r: httpx.Response(200, json=resposta_vazia))
+            transport=httpx.MockTransport(
+                lambda r: httpx.Response(200, json=resposta_vazia)
+            )
         ) as client:
             lat, lon, nome = buscar_coordenadas(client, "CidadeFantasmaXYZ", "SP")
             self.assertEqual((lat, lon), (0.0, 0.0))
@@ -175,7 +189,9 @@ class TestBuscarCoordenadas(unittest.TestCase):
     def test_buscar_coordenadas_erros_http_e_timeout(self) -> None:
         for status in (400, 500, 503):
             with httpx.Client(
-                transport=httpx.MockTransport(lambda r, s=status: httpx.Response(s, json={}))
+                transport=httpx.MockTransport(
+                    lambda r, s=status: httpx.Response(s, json={})
+                )
             ) as client:
                 lat, lon, nome = buscar_coordenadas(client, "Recife", "PE")
                 self.assertEqual((lat, lon), (0.0, 0.0))
