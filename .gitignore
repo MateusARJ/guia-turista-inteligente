@@ -1,3 +1,6 @@
+# Regras e documentação interna da atividade
+RULES.md
+
 # Ambientes virtuais Python
 .venv/
 venv/
@@ -7,6 +10,8 @@ ENV/
 # Bytecode e caches Python
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
 
 # Análise estática e testes
 .mypy_cache/
