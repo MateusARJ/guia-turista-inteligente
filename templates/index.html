@@ -22,6 +22,19 @@
       <p>Consultor inteligente de viagens com rotas, clima e guia turístico gerado com Python e IA</p>
     </header>
 
+    <!-- Mensagens Flash de Feedback (Flask) -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="flash-container" style="margin-bottom: 1.2rem;">
+        {% for category, message in messages %}
+        <div class="flash-alert flash-{{ category }}" style="padding: 0.85rem 1.1rem; border-radius: 10px; margin-bottom: 0.6rem; font-size: 0.92rem; font-weight: 600; display: flex; align-items: center; gap: 8px; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;">
+          <span>ℹ️</span> <div>{{ message }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endwith %}
+
     {% if not usuario %}
     <!-- Bloco de Login com Google (Processado 100% no Python via POST /auth/google/callback) -->
     <div class="card" style="text-align: center; padding: 2.2rem 1.2rem;">
@@ -67,13 +80,13 @@
     <!-- Barra de Perfil do Usuário -->
     <div class="card user-bar">
       <div class="user-info">
-        <img src="{{ usuario.foto }}" alt="Avatar de {{ usuario.nome }}">
+        <img src="{{ usuario.foto }}" alt="Avatar de {{ usuario.nome }}" onerror="this.onerror=null; this.src='https://lh3.googleusercontent.com/a/default-user=s96-c';">
         <div>
           <div class="user-name">{{ usuario.nome }}</div>
           <div class="user-email">{{ usuario.email }}</div>
         </div>
       </div>
-      <a href="{{ url_for('logout') }}" class="btn-logout btn">Sair  ➜]</a>
+      <a href="{{ url_for('logout') }}" class="btn-logout btn">Sair ➜</a>
     </div>
 
     <!-- Formulário de Planejamento 100% Python/Flask -->
@@ -84,7 +97,7 @@
         <label class="form-label" for="origem_cidade">Origem:</label>
         <div class="form-row">
           <input type="text" id="origem_cidade" name="origem_cidade" placeholder="Cidade de Origem (ex: Recife)" required>
-          <select name="origem_uf" required aria-label="UF de Origem">
+          <select id="origem_uf" name="origem_uf" required aria-label="UF de Origem">
             <option value="">UF</option>
             {% for uf in ufs %}
             <option value="{{ uf }}">{{ uf }}</option>
@@ -95,7 +108,7 @@
         <label class="form-label" for="destino_cidade">Destino:</label>
         <div class="form-row">
           <input type="text" id="destino_cidade" name="destino_cidade" placeholder="Cidade de Destino (ex: Salvador)" required>
-          <select name="destino_uf" required aria-label="UF de Destino">
+          <select id="destino_uf" name="destino_uf" required aria-label="UF de Destino">
             <option value="">UF</option>
             {% for uf in ufs %}
             <option value="{{ uf }}">{{ uf }}</option>
