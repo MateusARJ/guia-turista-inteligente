@@ -102,9 +102,7 @@ def buscar_coordenadas(
     cidade_limpa = (cidade or "").strip()
     uf_limpa = (uf or "").strip().upper()
     fallback_nome = (
-        f"{cidade_limpa} - {uf_limpa}".strip(" -")
-        if cidade_limpa
-        else (uf_limpa or "")
+        f"{cidade_limpa} - {uf_limpa}".strip(" -") if cidade_limpa else (uf_limpa or "")
     )
 
     if not cidade_limpa:
@@ -138,12 +136,15 @@ def buscar_coordenadas(
 
     # Filtro estrito para o território brasileiro (country_code == 'BR')
     resultados_brasil = [
-        item for item in resultados
+        item
+        for item in resultados
         if isinstance(item, dict) and str(item.get("country_code", "")).upper() == "BR"
     ]
-    lista_candidatos = resultados_brasil if resultados_brasil else [
-        item for item in resultados if isinstance(item, dict)
-    ]
+    lista_candidatos = (
+        resultados_brasil
+        if resultados_brasil
+        else [item for item in resultados if isinstance(item, dict)]
+    )
     if not lista_candidatos:
         return (0.0, 0.0, fallback_nome)
 
@@ -180,6 +181,7 @@ def buscar_coordenadas(
 # RESPONSAVEL: @MailsonSousa88
 # ==============================================================================
 
+
 def _numero_finito(valor: object) -> float | None:
     """Aceita apenas números JSON finitos, sem converter strings ou booleanos."""
     if isinstance(valor, bool) or not isinstance(valor, (int, float)):
@@ -194,8 +196,10 @@ def _numero_finito(valor: object) -> float | None:
 def _coordenadas_validas(lat: float, lon: float) -> bool:
     latitude, longitude = _numero_finito(lat), _numero_finito(lon)
     return (
-        latitude is not None and longitude is not None
-        and -90 <= latitude <= 90 and -180 <= longitude <= 180
+        latitude is not None
+        and longitude is not None
+        and -90 <= latitude <= 90
+        and -180 <= longitude <= 180
         and (latitude, longitude) != (0.0, 0.0)
     )
 
@@ -215,9 +219,11 @@ def obter_clima(client: httpx.Client, lat: float, lon: float) -> dict[str, str]:
         resposta = client.get(
             "https://api.open-meteo.com/v1/forecast",
             params={
-                "latitude": lat, "longitude": lon,
+                "latitude": lat,
+                "longitude": lon,
                 "current": "temperature_2m,relative_humidity_2m,wind_speed_10m",
-                "temperature_unit": "celsius", "wind_speed_unit": "kmh",
+                "temperature_unit": "celsius",
+                "wind_speed_unit": "kmh",
             },
             timeout=4.0,
         )
@@ -232,8 +238,11 @@ def obter_clima(client: httpx.Client, lat: float, lon: float) -> dict[str, str]:
     umidade = _numero_finito(atual.get("relative_humidity_2m"))
     vento = _numero_finito(atual.get("wind_speed_10m"))
     if (
-        temperatura is None or umidade is None or vento is None
-        or not 0 <= umidade <= 100 or vento < 0
+        temperatura is None
+        or umidade is None
+        or vento is None
+        or not 0 <= umidade <= 100
+        or vento < 0
     ):
         return contingencia
     return {

@@ -49,9 +49,31 @@ lock_requisicoes = threading.Lock()
 
 
 def sanitizar_entrada(texto: str, max_len: int = 80) -> str:
-    """Higieniza entradas de texto removendo tags HTML, caracteres de controle e espaços extras."""
-    # TODO (Aluno 4): Implementar a sanitização de texto via regex r'<[^>]*>'
-    pass
+    """
+    Higieniza entradas de texto removendo:
+    - Tags HTML
+    - Caracteres de controle
+    - Espaços extras
+    - Conteúdo acima do tamanho máximo permitido
+    """
+
+    # Remove tags HTML, como <script>, <b>, <div>, etc.
+    # A expressão <[^>]*> identifica qualquer conteúdo entre < e >.
+    texto = re.sub(r"<[^>]*>", "", texto)
+
+    # Remove caracteres de controle que podem causar problemas
+    # ou deixar caracteres invisíveis na entrada.
+    texto = re.sub(r"[\x00-\x1F\x7F]", "", texto)
+
+    # Substitui vários espaços, tabulações ou quebras de linha
+    # por apenas um espaço e remove espaços das extremidades.
+    texto = re.sub(r"\s+", " ", texto).strip()
+
+    # Limita o texto ao tamanho máximo definido.
+    # Por padrão, nenhuma entrada terá mais de 80 caracteres.
+    return texto[:max_len]
+
+    # Aluno 4
 
 
 def criar_estrutura_padrao_viagens() -> dict[str, Any]:
@@ -59,7 +81,7 @@ def criar_estrutura_padrao_viagens() -> dict[str, Any]:
     return {
         "versao_schema": "1.0",
         "descricao": "Base consolidada de roteiros turísticos e telemetria por usuário",
-        "atualizado_em": datetime.now().isoformat(),
+        "atualizado_em": datetime.now(timezone.utc).isoformat(),
         "total_usuarios": 0,
         "total_roteiros": 0,
         "provedores": {
@@ -71,23 +93,67 @@ def criar_estrutura_padrao_viagens() -> dict[str, Any]:
         "usuarios": {},
     }
 
+    # Aluno 4
+
 
 def carregar_dados_viagens_json() -> dict[str, Any]:
     """Lê a base completa de viagens de static/data/viagens.json de forma thread-safe com lock_arquivo_json."""
-    # TODO (Aluno 4): Implementar leitura segura do JSON com lock_arquivo_json
-    pass
+    with lock_arquivo_json:
+        if not VIAGENS_FILE.exists():
+            dados = criar_estrutura_padrao_viagens()
+            with open(VIAGENS_FILE, "w", encoding="utf-8") as arquivo:
+                json.dump(dados, arquivo, indent=2, ensure_ascii=False)
+            return dados
+
+        with open(VIAGENS_FILE, "r", encoding="utf-8") as arquivo:
+            try:
+                dados = json.load(arquivo)
+            except (json.JSONDecodeError, OSError):
+                dados = criar_estrutura_padrao_viagens()
+    return dados
+
+    # Aluno 4
 
 
 def salvar_dados_viagens_json(dados_completos: dict[str, Any]) -> None:
     """Persiste a base hierárquica em static/data/viagens.json com lock_arquivo_json e indentação de 2 espaços."""
-    # TODO (Aluno 4): Implementar escrita segura no arquivo JSON com lock_arquivo_json
-    pass
+    with lock_arquivo_json, open(VIAGENS_FILE, "w", encoding="utf-8") as arquivo:
+        json.dump(
+            dados_completos,
+            arquivo,
+            indent=2,
+            ensure_ascii=False,
+        )
+
+    # Aluno 4
 
 
 def obter_viagens_usuario(user_id: str) -> list[dict[str, Any]]:
     """Recupera a lista de roteiros: da memória para visitantes ou do arquivo JSON para logados."""
-    # TODO (Aluno 4): Implementar recuperação de roteiros por usuário (memória vs JSON)
-    pass
+
+    # Verifica primeiro se o usuário é um visitante.
+    # Visitantes não têm seus dados persistidos no JSON.
+    if user_id in viagens_visitante_memoria:
+        # Retorna os roteiros armazenados temporariamente
+        # na memória para esse visitante.
+        return viagens_visitante_memoria[user_id]
+
+    # Para usuários logados, carregamos os dados persistidos
+    # no arquivo viagens.json.
+    dados = carregar_dados_viagens_json()
+
+    # Procura o usuário dentro da estrutura "usuarios".
+    usuario = dados.get("usuarios", {}).get(user_id)
+
+    # Se o usuário ainda não possuir cadastro ou roteiros,
+    # retornamos uma lista vazia.
+    if not usuario:
+        return []
+
+    # Retorna somente a lista de roteiros desse usuário.
+    return usuario.get("roteiros", [])
+
+    # Aluno 4
 
 
 def adicionar_viagem_usuario(
@@ -96,14 +162,98 @@ def adicionar_viagem_usuario(
     perfil_usuario: dict[str, Any] | None = None,
 ) -> None:
     """Adiciona um novo roteiro: na memória para visitante ou grava no JSON para usuário logado."""
-    # TODO (Aluno 4): Implementar inserção de novo roteiro na estrutura de dados
-    pass
+    # Visitantes não possuem persistência no arquivo JSON.
+    # Seus roteiros ficam armazenados somente em memória.
+    if (
+        user_id in viagens_visitante_memoria
+        or (perfil_usuario and perfil_usuario.get("tipo") == "visitante")
+        or user_id.startswith("visitante_")
+    ):
+        viagens_visitante_memoria.setdefault(user_id, []).insert(0, item)
+        return
+
+    # Para usuários logados, primeiro carregamos a estrutura
+    # persistida no arquivo viagens.json.
+    dados = carregar_dados_viagens_json()
+
+    # Recupera a estrutura de usuários.
+    usuarios = dados.setdefault("usuarios", {})
+
+    # Verifica se o usuário já existe no arquivo JSON.
+    if user_id not in usuarios:
+        # Se ainda não existir, cria o cadastro do usuário.
+        usuarios[user_id] = {
+            "perfil": perfil_usuario or {},
+            "roteiros": [],
+        }
+
+        # Atualiza a quantidade total de usuários cadastrados.
+        dados["total_usuarios"] = len(usuarios)
+
+    # Recupera a lista de roteiros do usuário.
+    roteiros = usuarios[user_id].setdefault("roteiros", [])
+
+    # Adiciona o novo roteiro à lista no início (mais recente primeiro).
+    roteiros.insert(0, item)
+
+    # Atualiza a quantidade total de roteiros armazenados.
+    dados["total_roteiros"] = sum(
+        len(usuario.get("roteiros", [])) for usuario in usuarios.values()
+    )
+
+    # Registra o momento da última alteração na base.
+    dados["atualizado_em"] = datetime.now(timezone.utc).isoformat()
+
+    # Persiste as alterações no arquivo JSON.
+    salvar_dados_viagens_json(dados)
+
+    # Aluno 4
 
 
 def remover_viagem_usuario(user_id: str, viagem_id: str) -> None:
     """Remove um roteiro específico pelo ID."""
-    # TODO (Aluno 4): Implementar remoção de roteiro pelo ID
-    pass
+    # Visitantes possuem os roteiros armazenados somente em memória.
+    if user_id in viagens_visitante_memoria or user_id.startswith("visitante_"):
+        viagens_visitante_memoria[user_id] = [
+            viagem
+            for viagem in viagens_visitante_memoria.get(user_id, [])
+            if viagem.get("id") != viagem_id
+        ]
+        return
+
+    # Para usuários logados, carregamos os dados persistidos.
+    dados = carregar_dados_viagens_json()
+
+    # Recupera a estrutura de usuários.
+    usuarios = dados.get("usuarios", {})
+
+    # Procura o usuário pelo ID.
+    usuario = usuarios.get(user_id)
+
+    # Se o usuário não existir, não há nada para remover.
+    if not usuario:
+        return
+
+    # Recupera os roteiros cadastrados para o usuário.
+    roteiros = usuario.get("roteiros", [])
+
+    # Mantém somente os roteiros que possuem ID diferente
+    # daquele que queremos remover.
+    usuario["roteiros"] = [
+        viagem for viagem in roteiros if viagem.get("id") != viagem_id
+    ]
+
+    # Recalcula a quantidade total de roteiros existentes
+    # em todos os usuários.
+    dados["total_roteiros"] = sum(
+        len(usuario_item.get("roteiros", [])) for usuario_item in usuarios.values()
+    )
+
+    # Atualiza a data da última alteração da base.
+    dados["atualizado_em"] = datetime.now(timezone.utc).isoformat()
+
+    # Salva a estrutura atualizada no arquivo JSON.
+    salvar_dados_viagens_json(dados)
 
 
 # ==============================================================================
@@ -155,7 +305,9 @@ def google_callback():
                 #   'email', 'picture' (ou None se inválido/expirado).
                 #   Tratamos com fallback para 'id', 'nome' e 'foto' para evitar quebra.
                 # ----------------------------------------------------------------------
-                pool_limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
+                pool_limits = httpx.Limits(
+                    max_keepalive_connections=5, max_connections=10
+                )
                 with httpx.Client(limits=pool_limits, timeout=10.0) as client:
                     payload = verificar_token_google(client, token)
 
@@ -164,7 +316,8 @@ def google_callback():
                     if user_id:
                         session["usuario"] = {
                             "id": user_id,
-                            "nome": payload.get("name") or payload.get("nome", "Usuário Google"),
+                            "nome": payload.get("name")
+                            or payload.get("nome", "Usuário Google"),
                             "email": payload.get("email", ""),
                             "foto": payload.get("picture") or payload.get("foto", ""),
                             "tipo": "google",
@@ -228,16 +381,16 @@ def criar_viagem():
     # Higienização defensiva (Aluno 4 com fallback)
     origem_cidade = (sanitizar_entrada(origem_cidade_raw) or origem_cidade_raw).strip()
     origem_uf = origem_uf_raw.strip().upper()
-    destino_cidade = (sanitizar_entrada(destino_cidade_raw) or destino_cidade_raw).strip()
+    destino_cidade = (
+        sanitizar_entrada(destino_cidade_raw) or destino_cidade_raw
+    ).strip()
     destino_uf = destino_uf_raw.strip().upper()
 
     if not origem_cidade or not destino_cidade:
         return redirect(url_for("index"))
 
     # Chave canônica de idempotência
-    chave_idempotencia = (
-        f"{user_id}:{origem_cidade.lower()}:{origem_uf}:{destino_cidade.lower()}:{destino_uf}"
-    )
+    chave_idempotencia = f"{user_id}:{origem_cidade.lower()}:{origem_uf}:{destino_cidade.lower()}:{destino_uf}"
     agora = time.time()
 
     # Controle de concorrência e deduplicação via Locks
@@ -266,7 +419,9 @@ def criar_viagem():
     # Orquestração externa com garantia de liberação do lock no finally
     try:
         nome_origem = f"{origem_cidade} - {origem_uf}" if origem_uf else origem_cidade
-        nome_destino = f"{destino_cidade} - {destino_uf}" if destino_uf else destino_cidade
+        nome_destino = (
+            f"{destino_cidade} - {destino_uf}" if destino_uf else destino_cidade
+        )
         clima = {"temperatura": "N/D", "umidade": "N/D", "vento": "N/D"}
         percurso = {"distancia": "N/D", "tempo": "N/D"}
         guia_texto = "Roteiro em processamento."
@@ -337,10 +492,7 @@ def criar_viagem():
             "diagnostico_ia": diagnostico,
         }
 
-        # Persistência: memória para visitante e função do Aluno 4 para base JSON
-        if usuario.get("tipo") == "visitante":
-            viagens_visitante_memoria.setdefault(user_id, []).insert(0, viagem)
-
+        # Persistência via função do Aluno 4 (memória para visitante ou base JSON para usuário logado)
         adicionar_viagem_usuario(user_id, viagem, usuario)
 
     except Exception as err:  # noqa: BLE001 - barreira defensiva para falhas de orquestração externa
@@ -361,11 +513,6 @@ def deletar_viagem(viagem_id: str):
         user_id = str(usuario["id"])
         remover_viagem_usuario(user_id, viagem_id)
 
-        if usuario.get("tipo") == "visitante" and user_id in viagens_visitante_memoria:
-            viagens_visitante_memoria[user_id] = [
-                v for v in viagens_visitante_memoria[user_id] if v.get("id") != viagem_id
-            ]
-
     # Padrão PRG
     return redirect(url_for("index"))
 
@@ -380,22 +527,39 @@ def deletar_viagem(viagem_id: str):
 @app.route("/api/viagens", methods=["GET"])
 def ver_viagens_json():
     """Retorna a base consolidada de static/data/viagens.json com suporte dinâmico a visitantes."""
-    # TODO (Aluno 4): Retornar jsonify() da árvore consolidada de viagens
-    pass
+
+    # Aluno 4
+    # Carrega a estrutura persistida no arquivo JSON.
+    dados = carregar_dados_viagens_json()
+
+    # Retorna os dados no formato JSON através do Flask.
+    # jsonify também define automaticamente o Content-Type
+    # apropriado para uma resposta JSON.
+    return jsonify(dados)
 
 
 @app.errorhandler(405)
 def metodo_nao_permitido(error):
     """Fallback para acessos GET em rotas POST (ex: digitar /viagens/criar na barra de endereços)."""
-    # TODO (Aluno 4): Interceptar erro 405 e redirecionar suavemente para url_for('index')
-    pass
+
+    # Aluno 4
+    # O erro 405 acontece quando a rota existe,
+    # mas o método HTTP utilizado não é permitido.
+    # Exemplo: enviar POST para uma rota que aceita apenas GET.
+
+    # Redireciona o usuário para a página inicial
+    # em vez de apresentar uma página de erro.
+    return redirect(url_for("index"))
 
 
 @app.errorhandler(404)
 def pagina_nao_encontrada(error):
     """Fallback para rotas inexistentes redirecionando suavemente para a página principal."""
-    # TODO (Aluno 4): Interceptar erro 404 e redirecionar suavemente para url_for('index')
-    pass
+    # O erro 404 acontece quando a rota solicitada não existe.
+
+    # Redireciona o usuário para a página inicial
+    # em vez de apresentar uma página de erro.
+    return redirect(url_for("index"))
 
 
 if __name__ == "__main__":

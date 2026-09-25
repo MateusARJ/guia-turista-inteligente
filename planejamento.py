@@ -19,6 +19,7 @@ from config import GEMINI_KEY, GEMINI_TIMEOUT_SEGUNDOS
 # RESPONSAVEL: @MailsonSousa88
 # ==============================================================================
 
+
 def limpar_formato_texto(texto: str) -> str:
     """Remove marcações residuais de markdown (** ou *), hashtags, crases e saudações, mantendo apenas emojis."""
     # TODO (Aluno 2): Implementar limpeza regex de marcações markdown e saudações
@@ -31,7 +32,12 @@ def limpar_formato_texto(texto: str) -> str:
     texto = texto.replace("*", "").replace("`", "").replace("~~", "")
     texto = re.sub(r"(?<!\w)#(?=[^\W\d_])", "", texto)
     # Só remove a saudação curta inicial, nunca a frase útil que vem depois.
-    texto = re.sub(r"\A\s*(?:olá|oi|bom dia|boa tarde|boa noite)[!.,:;\s]+", "", texto, flags=re.IGNORECASE)
+    texto = re.sub(
+        r"\A\s*(?:olá|oi|bom dia|boa tarde|boa noite)[!.,:;\s]+",
+        "",
+        texto,
+        flags=re.IGNORECASE,
+    )
     texto = "\n".join(linha.strip() for linha in texto.splitlines())
     return re.sub(r"\n{3,}", "\n\n", texto).strip()
 
@@ -82,8 +88,12 @@ def _consultar_gemini(destino: str) -> str:
             contents=json.dumps({"destino": destino}, ensure_ascii=False),
             config=types.GenerateContentConfig(
                 system_instruction=INSTRUCOES_GUIA,
-                thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL),
-                automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+                thinking_config=types.ThinkingConfig(
+                    thinking_level=types.ThinkingLevel.MINIMAL
+                ),
+                automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                    disable=True
+                ),
             ),
         )
         texto = resposta.text
@@ -94,7 +104,8 @@ def _consultar_gemini(destino: str) -> str:
         secoes = re.fullmatch(
             r"📍 Pontos turísticos\s*\n(.+?)\n+🍽️? Culinária\s*\n(.+?)"
             r"\n+💡 Dica de ouro\s*\n(.+)",
-            texto, flags=re.DOTALL | re.IGNORECASE,
+            texto,
+            flags=re.DOTALL | re.IGNORECASE,
         )
         if (
             not secoes
@@ -115,7 +126,9 @@ def obter_guia_destino_com_diagnostico(destino: str) -> tuple[str, dict[str, Any
     # TODO (Aluno 2): Implementar integração com SDK do Gemini com timeout e fallback defensivo
     pass  # noqa: PIE790 - preservado conforme solicitado; implementação abaixo.
     diagnostico: dict[str, Any] = {
-        "status": "fallback", "modelo": MODELO, "fallback_utilizado": True,
+        "status": "fallback",
+        "modelo": MODELO,
+        "fallback_utilizado": True,
     }
     if not GEMINI_KEY.strip():
         diagnostico["motivo"] = "chave_ausente"
@@ -126,13 +139,19 @@ def obter_guia_destino_com_diagnostico(destino: str) -> tuple[str, dict[str, Any
     try:
         tarefa = executor.submit(_consultar_gemini, destino)
         texto = tarefa.result(timeout=GEMINI_TIMEOUT_SEGUNDOS)
-        return texto, {"status": "sucesso", "modelo": MODELO, "fallback_utilizado": False}
+        return texto, {
+            "status": "sucesso",
+            "modelo": MODELO,
+            "fallback_utilizado": False,
+        }
     except (TimeoutError, httpx.TimeoutException):
         diagnostico["motivo"] = "timeout"
     except errors.APIError as erro:
         diagnostico["motivo"] = {
             400: "requisicao_ou_chave_invalida",
-            401: "chave_invalida", 403: "acesso_negado", 429: "cota_excedida",
+            401: "chave_invalida",
+            403: "acesso_negado",
+            429: "cota_excedida",
             504: "timeout",
         }.get(erro.code, "erro_api")
     except httpx.RequestError:
