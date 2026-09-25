@@ -74,7 +74,9 @@ class TestAluno3BackendSessoes(unittest.TestCase):
 
         with self.client.session_transaction() as sess:
             user_id = sess["usuario"]["id"]
-            viagens_visitante_memoria[user_id] = [{"id": "v1", "origem": "A", "destino": "B"}]
+            viagens_visitante_memoria[user_id] = [
+                {"id": "v1", "origem": "A", "destino": "B"}
+            ]
 
         # Executa logout
         logout_response = self.client.get("/auth/logout")
@@ -211,7 +213,11 @@ class TestAluno3BackendSessoes(unittest.TestCase):
     ):
         """Valida que cliques duplicados em sequência rápida são interceptados pelo cooldown."""
         mock_coord.return_value = (-8.0, -34.0, "Cidade - UF")
-        mock_clima.return_value = {"temperatura": "25 °C", "umidade": "60 %", "vento": "10 km/h"}
+        mock_clima.return_value = {
+            "temperatura": "25 °C",
+            "umidade": "60 %",
+            "vento": "10 km/h",
+        }
         mock_percurso.return_value = {"distancia": "100 km", "tempo": "1h 30m"}
         mock_guia.return_value = ("Dicas de viagem", {})
 
