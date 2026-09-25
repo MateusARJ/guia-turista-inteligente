@@ -22,18 +22,27 @@
       <p>Consultor inteligente de viagens com rotas, clima e guia turístico gerado com Python e IA</p>
     </header>
 
-    <!-- Mensagens Flash de Feedback (Flask) -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-      <div class="flash-container" style="margin-bottom: 1.2rem;">
-        {% for category, message in messages %}
-        <div class="flash-alert flash-{{ category }}" style="padding: 0.85rem 1.1rem; border-radius: 10px; margin-bottom: 0.6rem; font-size: 0.92rem; font-weight: 600; display: flex; align-items: center; gap: 8px; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;">
-          <span>ℹ️</span> <div>{{ message }}</div>
-        </div>
-        {% endfor %}
-      </div>
-      {% endif %}
-    {% endwith %}
+    <!-- Container de Toasts Flutuantes / Mensagens de Feedback -->
+    <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+          <div class="toast toast-{{ category }} flash-alert flash-{{ category }}" role="alert">
+            <div class="toast-icon">
+              {% if category in ['erro', 'error', 'danger'] %}⚠️{% elif category in ['sucesso', 'success'] %}✅{% else %}ℹ️{% endif %}
+            </div>
+            <div class="toast-body">
+              <div class="toast-title">
+                {% if category in ['erro', 'error', 'danger'] %}Falha na Requisição{% elif category in ['sucesso', 'success'] %}Sucesso{% else %}Aviso{% endif %}
+              </div>
+              <div class="toast-message">{{ message }}</div>
+            </div>
+            <button type="button" class="toast-close" onclick="fecharToast(this)" aria-label="Fechar notificação">&times;</button>
+          </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+    </div>
 
     {% if not usuario %}
     <!-- Bloco de Login com Google (Processado 100% no Python via POST /auth/google/callback) -->
@@ -129,6 +138,54 @@
         </a>
       </div>
       
+      <!-- Card de Estado de Carregamento (Exibido imediatamente ao submeter formulário) -->
+      <div id="cardLoading" class="viagem-card viagem-card-loading hidden" aria-live="assertive" aria-busy="true">
+        <div class="viagem-header">
+          <div class="viagem-rota-info">
+            <div class="viagem-rota-titulo">
+              <span id="loadingRotaTexto">Planejando novo roteiro...</span>
+              <span class="badge-status-loading">
+                <span class="spinner-inline"></span> Processando
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Badges de Telemetria com Skeleton e Spinners -->
+        <div class="telemetria-grid">
+          <span class="tele-badge tele-badge-loading">
+            <span class="spinner-mini"></span> 🌡️ Clima
+          </span>
+          <span class="tele-badge tele-badge-loading">
+            <span class="spinner-mini"></span> 💧 Umidade
+          </span>
+          <span class="tele-badge tele-badge-loading">
+            <span class="spinner-mini"></span> 💨 Vento
+          </span>
+          <span class="tele-badge tele-badge-destaque tele-badge-loading">
+            <span class="spinner-mini"></span> 🚗 Distância
+          </span>
+          <span class="tele-badge tele-badge-tempo tele-badge-loading">
+            <span class="spinner-mini"></span> ⏱️ Tempo estimado
+          </span>
+        </div>
+
+        <!-- Seção do Guia Skeleton -->
+        <div class="secao-guia secao-guia-loading">
+          <div class="secao-guia-header">
+            <span class="spinner-mini"></span> 🤖 Consultando Inteligência Artificial Gemini...
+          </div>
+          <div class="skeleton-linhas">
+            <div class="skeleton-linha w-80"></div>
+            <div class="skeleton-linha w-95"></div>
+            <div class="skeleton-linha w-60"></div>
+          </div>
+          <p class="loading-subtexto">Integrando Open-Meteo, OSRM e Gemini AI. Por favor, aguarde alguns instantes...</p>
+        </div>
+      </div>
+      
+      <!-- Lista de Viagens Salvas -->
+      <div id="listaViagens">
       {% if viagens %}
         {% for v in viagens %}
         <div class="viagem-card" id="card-{{ v.id }}" onclick="alternarCard('{{ v.id }}', event)" title="Clique no cartão para expandir ou recolher o guia">
@@ -166,8 +223,9 @@
         </div>
         {% endfor %}
       {% else %}
-        <p style="color: var(--text-muted); text-align: center; padding: 1rem; font-size: 0.9rem;">Nenhum roteiro salvo ainda. Planeje sua primeira rota acima!</p>
+        <p id="msgSemRoteiros" style="color: var(--text-muted); text-align: center; padding: 1rem; font-size: 0.9rem;">Nenhum roteiro salvo ainda. Planeje sua primeira rota acima!</p>
       {% endif %}
+      </div>
     </div>
     {% endif %}
 
