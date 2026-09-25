@@ -23,7 +23,7 @@ from config import GEMINI_KEY, GEMINI_TIMEOUT_SEGUNDOS
 def limpar_formato_texto(texto: str) -> str:
     """Remove marcações residuais de markdown (** ou *), hashtags, crases e saudações, mantendo apenas emojis."""
     # TODO (Aluno 2): Implementar limpeza regex de marcações markdown e saudações
-    pass  # noqa: PIE790 - preservado conforme solicitado; implementação abaixo.
+    # noqa: PIE790 - preservado conforme solicitado; implementação abaixo.
     texto = texto.replace("\r\n", "\n").replace("\r", "\n")
     texto = re.sub(r"(?m)^\s*```[^\n]*$", "", texto)
     texto = re.sub(r"!?\[([^\]\n]+)\]\([^\n)]*\)", r"\1", texto)
@@ -124,7 +124,7 @@ def obter_guia_destino_com_diagnostico(destino: str) -> tuple[str, dict[str, Any
     Retorna a tupla (texto_guia, diagnostico_metadados).
     """
     # TODO (Aluno 2): Implementar integração com SDK do Gemini com timeout e fallback defensivo
-    pass  # noqa: PIE790 - preservado conforme solicitado; implementação abaixo.
+    # noqa: PIE790 - preservado conforme solicitado; implementação abaixo.
     diagnostico: dict[str, Any] = {
         "status": "fallback",
         "modelo": MODELO,
