@@ -1,8 +1,6 @@
 """Aplicação Flask Principal - Guia do Turista Inteligente (API Gateway em Python)."""
 
-import json
 import os
-import re
 import threading
 import time
 import uuid
@@ -10,14 +8,13 @@ from datetime import datetime, timezone
 from typing import Any
 
 import httpx
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, redirect, render_template, request, session, url_for
 
 from config import (
     DATA_DIR,
     ESTADOS_BRASIL,
     GOOGLE_CLIENT_ID,
     PORT,
-    VIAGENS_FILE,
 )
 from planejamento import obter_guia_destino_com_diagnostico
 from services import (
@@ -51,7 +48,6 @@ lock_requisicoes = threading.Lock()
 def sanitizar_entrada(texto: str, max_len: int = 80) -> str:
     """Higieniza entradas de texto removendo tags HTML, caracteres de controle e espaços extras."""
     # TODO (Aluno 4): Implementar a sanitização de texto via regex r'<[^>]*>'
-    pass
 
 
 def criar_estrutura_padrao_viagens() -> dict[str, Any]:
@@ -59,7 +55,7 @@ def criar_estrutura_padrao_viagens() -> dict[str, Any]:
     return {
         "versao_schema": "1.0",
         "descricao": "Base consolidada de roteiros turísticos e telemetria por usuário",
-        "atualizado_em": datetime.now().isoformat(),
+        "atualizado_em": datetime.now(timezone.utc).isoformat(),
         "total_usuarios": 0,
         "total_roteiros": 0,
         "provedores": {
@@ -75,19 +71,16 @@ def criar_estrutura_padrao_viagens() -> dict[str, Any]:
 def carregar_dados_viagens_json() -> dict[str, Any]:
     """Lê a base completa de viagens de static/data/viagens.json de forma thread-safe com lock_arquivo_json."""
     # TODO (Aluno 4): Implementar leitura segura do JSON com lock_arquivo_json
-    pass
 
 
 def salvar_dados_viagens_json(dados_completos: dict[str, Any]) -> None:
     """Persiste a base hierárquica em static/data/viagens.json com lock_arquivo_json e indentação de 2 espaços."""
     # TODO (Aluno 4): Implementar escrita segura no arquivo JSON com lock_arquivo_json
-    pass
 
 
 def obter_viagens_usuario(user_id: str) -> list[dict[str, Any]]:
     """Recupera a lista de roteiros: da memória para visitantes ou do arquivo JSON para logados."""
     # TODO (Aluno 4): Implementar recuperação de roteiros por usuário (memória vs JSON)
-    pass
 
 
 def adicionar_viagem_usuario(
@@ -97,13 +90,11 @@ def adicionar_viagem_usuario(
 ) -> None:
     """Adiciona um novo roteiro: na memória para visitante ou grava no JSON para usuário logado."""
     # TODO (Aluno 4): Implementar inserção de novo roteiro na estrutura de dados
-    pass
 
 
 def remover_viagem_usuario(user_id: str, viagem_id: str) -> None:
     """Remove um roteiro específico pelo ID."""
     # TODO (Aluno 4): Implementar remoção de roteiro pelo ID
-    pass
 
 
 # ==============================================================================
@@ -381,21 +372,18 @@ def deletar_viagem(viagem_id: str):
 def ver_viagens_json():
     """Retorna a base consolidada de static/data/viagens.json com suporte dinâmico a visitantes."""
     # TODO (Aluno 4): Retornar jsonify() da árvore consolidada de viagens
-    pass
 
 
 @app.errorhandler(405)
 def metodo_nao_permitido(error):
     """Fallback para acessos GET em rotas POST (ex: digitar /viagens/criar na barra de endereços)."""
     # TODO (Aluno 4): Interceptar erro 405 e redirecionar suavemente para url_for('index')
-    pass
 
 
 @app.errorhandler(404)
 def pagina_nao_encontrada(error):
     """Fallback para rotas inexistentes redirecionando suavemente para a página principal."""
     # TODO (Aluno 4): Interceptar erro 404 e redirecionar suavemente para url_for('index')
-    pass
 
 
 if __name__ == "__main__":

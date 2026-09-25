@@ -112,6 +112,14 @@ task --list
 
 ## 5. Selecionar testes e ajustar a saída
 
+Para autenticação Google, conversão de UF e geocodificação do Aluno 1:
+
+```powershell
+task test-auth-geo
+```
+
+Esses cenários estão em `tests/test_services_aluno1.py` e simulam as APIs.
+
 | Comando | O que executa |
 | --- | --- |
 | `task test-ia` | Testes automatizados de planejamento |

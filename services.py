@@ -1,9 +1,13 @@
 # Serviços de integração com APIs externas (Google OAuth, Open-Meteo e OSRM)
 
 import math
+import time
+import unicodedata
 from typing import Any
 
 import httpx
+
+from config import ESTADOS_BRASIL, GOOGLE_CLIENT_ID
 
 # ==============================================================================
 # 👤 RESPONSABILIDADE DO ALUNO 1: APIs REST, Autenticação JWT e Geocodificação
@@ -17,6 +21,43 @@ def verificar_token_google(client: httpx.Client, token: str) -> dict[str, Any] |
     e retorna o payload do usuário (sub, name, email, picture) ou None se for inválido.
     """
     # TODO (Aluno 1): Implementar a validação do token JWT junto à API do Google OAuth2
+    if not isinstance(token, str) or not token.strip() or not GOOGLE_CLIENT_ID.strip():
+        return None
+    try:
+        resposta = client.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"id_token": token.strip()},
+            timeout=4.0,
+        )
+        resposta.raise_for_status()
+        dados = resposta.json()
+    except (httpx.HTTPError, ValueError):
+        return None
+    if not isinstance(dados, dict) or dados.get("aud") != GOOGLE_CLIENT_ID:
+        return None
+    if dados.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
+        return None
+    if not isinstance(dados.get("sub"), str) or not dados["sub"].strip():
+        return None
+    # tokeninfo pode devolver exp como string decimal.
+    expiracao = dados.get("exp")
+    if isinstance(expiracao, str) and expiracao.isascii() and expiracao.isdecimal():
+        try:
+            expiracao = int(expiracao)
+        except ValueError:
+            return None
+    exp = _numero_finito(expiracao)
+    if exp is None or exp <= time.time():
+        return None
+    return dados
+
+
+def _normalizar_nome_local(texto: str) -> str:
+    """Compara nomes sem depender de acentos, caixa ou espaços duplicados."""
+    normalizado = unicodedata.normalize("NFKD", texto)
+    return " ".join(
+        "".join(c for c in normalizado if not unicodedata.combining(c)).casefold().split()
+    )
 
 
 def obter_sigla_uf(admin1: str, uf_informada: str = "") -> str:
@@ -26,6 +67,12 @@ def obter_sigla_uf(admin1: str, uf_informada: str = "") -> str:
     Caso contrário, utiliza a UF informada como fallback se for válida.
     """
     # TODO (Aluno 1): Implementar a conversão e normalização da UF
+    nome = _normalizar_nome_local(admin1) if isinstance(admin1, str) else ""
+    for sigla, estado in ESTADOS_BRASIL.items():
+        if nome in (sigla.casefold(), _normalizar_nome_local(estado)):
+            return sigla
+    fallback = uf_informada.strip().upper() if isinstance(uf_informada, str) else ""
+    return fallback if fallback in ESTADOS_BRASIL else ""
 
 
 def buscar_coordenadas(
@@ -33,10 +80,51 @@ def buscar_coordenadas(
 ) -> tuple[float, float, str]:
     """Consulta o Open-Meteo Geocoding com filtro Brasil (country_codes=BR) e timeout=4.0s.
 
-    Retorna a tupla (latitude, longitude, nome_formatado). Caso a busca falhe,
-    aplica fallback seguro retornando (0.0, 0.0, "Cidade - UF").
+    Retorna (latitude, longitude, nome_formatado), preservando o contrato de app.py.
+    Em falha, retorna (0.0, 0.0, "Cidade - UF"), com a UF informada validada.
     """
     # TODO (Aluno 1): Implementar a consulta à API de Geocodificação Open-Meteo com filtro Brasil
+    nome_cidade = cidade.strip() if isinstance(cidade, str) else ""
+    uf_fallback = obter_sigla_uf("", uf)
+    nome_fallback = f"{nome_cidade} - {uf_fallback}" if nome_cidade and uf_fallback else nome_cidade
+    fallback = (0.0, 0.0, nome_fallback)
+    if not isinstance(cidade, str) or not cidade.strip():
+        return fallback
+    try:
+        resposta = client.get(
+            "https://geocoding-api.open-meteo.com/v1/search",
+            params={
+                "name": cidade.strip(), "count": 10, "language": "pt",
+                "format": "json", "country_codes": "BR",
+            },
+            timeout=4.0,
+        )
+        resposta.raise_for_status()
+        dados = resposta.json()
+    except (httpx.HTTPError, ValueError):
+        return fallback
+    if not isinstance(dados, dict) or not isinstance(dados.get("results"), list):
+        return fallback
+    # Prioriza o nome exato entre resultados brasileiros válidos, sem filtrar
+    # pela UF digitada: ela pode estar errada, como em Teresina / RJ.
+    candidatos: list[tuple[bool, float, float, str]] = []
+    for local in dados["results"]:
+        if not isinstance(local, dict) or local.get("country_code") != "BR":
+            continue
+        lat = _numero_finito(local.get("latitude"))
+        lon = _numero_finito(local.get("longitude"))
+        if lat is None or lon is None or not _coordenadas_validas(lat, lon):
+            continue
+        nome = local.get("name")
+        exato = isinstance(nome, str) and _normalizar_nome_local(nome) == _normalizar_nome_local(cidade)
+        sigla = obter_sigla_uf(local.get("admin1", ""), uf)
+        nome_local = nome.strip() if isinstance(nome, str) and nome.strip() else nome_cidade
+        nome_formatado = f"{nome_local} - {sigla}" if sigla else nome_local
+        candidatos.append((exato, lat, lon, nome_formatado))
+    if not candidatos:
+        return fallback
+    _, lat, lon, nome_formatado = max(candidatos, key=lambda item: item[0])
+    return lat, lon, nome_formatado
 
 
 # ==============================================================================

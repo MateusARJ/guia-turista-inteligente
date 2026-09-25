@@ -4,6 +4,7 @@ pythonpath = ["."]
 addopts = "-ra"
 
 [tool.taskipy.tasks]
+test-auth-geo = { cmd = "python -m pytest tests/test_services_aluno1.py", help = "Testa autenticação Google e geocodificação com respostas simuladas" }
 test = { cmd = "python -m pytest", help = "Executa todos os testes automatizados, sem acessar APIs" }
 test-ia = { cmd = "python -m pytest tests/test_planejamento.py", help = "Testa IA e contingência com respostas simuladas" }
 test-servicos = { cmd = "python -m pytest tests/test_services_aluno2.py", help = "Testa clima e percurso com respostas simuladas" }
