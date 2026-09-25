@@ -582,3 +582,295 @@ button,
     font-size: 0.92rem;
   }
 }
+
+/* ========================================================
+   SISTEMA DE TOAST / NOTIFICAÇÕES FLUTUANTES
+   ======================================================== */
+.toast-container {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 420px;
+  width: calc(100% - 2.5rem);
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .toast-container {
+    top: 0.85rem;
+    right: 0.85rem;
+    left: 0.85rem;
+    width: auto;
+  }
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 1rem 1.15rem;
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--text-main);
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.15), 0 2px 8px rgba(15, 23, 42, 0.08);
+  border: 1px solid var(--border-color);
+  animation: slideInToast 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.toast::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 5px;
+}
+
+/* Tipos de Toast */
+.toast-erro,
+.toast-error,
+.toast-danger {
+  background: #fff5f5;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.toast-erro::before,
+.toast-error::before,
+.toast-danger::before {
+  background: #dc2626;
+}
+
+.toast-sucesso,
+.toast-success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.toast-sucesso::before,
+.toast-success::before {
+  background: #16a34a;
+}
+
+.toast-info {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+.toast-info::before {
+  background: #0284c7;
+}
+
+.toast-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.toast-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-title {
+  font-weight: 700;
+  font-size: 0.92rem;
+  margin-bottom: 2px;
+  line-height: 1.3;
+}
+
+.toast-message {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  opacity: 0.92;
+  word-break: break-word;
+}
+
+.toast-close {
+  background: transparent;
+  border: none;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  padding: 0;
+  margin-left: 4px;
+  min-height: auto;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.toast-close:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.toast-saindo {
+  opacity: 0;
+  transform: translateY(-16px) scale(0.95);
+  pointer-events: none;
+}
+
+@keyframes slideInToast {
+  from {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ========================================================
+   ESTADO DE CARREGAMENTO DO CARD DE VIAGEM (SKELETON & SPINNERS)
+   ======================================================== */
+.viagem-card-loading {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1.5px dashed #0284c7;
+  animation: pulseCard 2s ease-in-out infinite;
+  cursor: wait;
+}
+
+.viagem-card-loading::before {
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+}
+
+.badge-status-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #e0f2fe;
+  color: #0284c7;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #bae6fd;
+  margin-left: 6px;
+}
+
+.tele-badge-loading {
+  background: #f1f5f9;
+  color: #64748b;
+  border-style: dashed;
+}
+
+.secao-guia-loading {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+}
+
+.skeleton-linhas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0.8rem 0;
+}
+
+.skeleton-linha {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f8fafc 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmerSkeleton 1.6s infinite;
+}
+
+.skeleton-linha.w-95 { width: 95%; }
+.skeleton-linha.w-80 { width: 80%; }
+.skeleton-linha.w-60 { width: 60%; }
+
+.loading-subtexto {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  font-style: italic;
+}
+
+/* Spinners */
+.spinner-inline {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(2, 132, 199, 0.25);
+  border-top-color: #0284c7;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  vertical-align: middle;
+}
+
+.spinner-btn {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.spinner-mini {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(100, 116, 139, 0.25);
+  border-top-color: #64748b;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmerSkeleton {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes pulseCard {
+  0%, 100% {
+    box-shadow: 0 3px 12px rgba(2, 132, 199, 0.08);
+  }
+  50% {
+    box-shadow: 0 6px 24px rgba(2, 132, 199, 0.2);
+  }
+}
+
+/* Botão em estado de carregamento interativo (permanece clicável para demonstrar idempotência) */
+.btn-loading {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  cursor: pointer !important;
+  opacity: 0.95;
+  user-select: none;
+  transition: transform 0.1s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-loading:hover {
+  filter: brightness(1.05);
+}
+
+.btn-loading:active {
+  transform: scale(0.98);
+  filter: brightness(0.92);
+}
+
