@@ -211,7 +211,7 @@ def obter_clima(client: httpx.Client, lat: float, lon: float) -> dict[str, str]:
     retorna dicionário de contingência com valores 'N/D'.
     """
     # TODO (Aluno 2): Implementar a consulta à API Open-Meteo Forecast com timeout e fallback
-    pass  # noqa: PIE790 - estrutura original preservada; implementação abaixo.
+    # noqa: PIE790 - estrutura original preservada; implementação abaixo.
     contingencia = {"temperatura": "N/D", "umidade": "N/D", "vento": "N/D"}
     if not _coordenadas_validas(lat, lon):
         return contingencia
@@ -261,7 +261,7 @@ def obter_percurso(
     retorna dicionário com fallback descritivo ('Sem rota direta' / 'Considere voos ou barcos').
     """
     # TODO (Aluno 2): Implementar o cálculo de rota e distância via OSRM com conversão de unidades
-    pass  # noqa: PIE790 - estrutura original preservada; implementação abaixo.
+    # noqa: PIE790 - estrutura original preservada; implementação abaixo.
     contingencia = {
         "distancia": "Sem rota direta",
         "tempo": "Considere voos ou barcos",
