@@ -51,7 +51,10 @@ O nome da pasta de demonstrações no projeto é **`scripts/`**, no plural.
 tests/
 ├── conftest.py
 ├── test_planejamento.py
+├── test_services_aluno1.py
 ├── test_services_aluno2.py
+├── test_aluno3_backend_sessoes.py
+├── test_aluno4_json.py
 └── test_atalhos.py
 
 scripts/
@@ -70,13 +73,20 @@ de internet para executar.
 | Arquivo | Responsabilidade |
 | --- | --- |
 | `conftest.py` | Fixture automática que substitui a chave usada por planejamento e bloqueia o transporte HTTP real do HTTPX |
-| `test_planejamento.py` | Limpeza do texto, sucesso da IA, contingências, diagnóstico, timeout e wrapper |
-| `test_services_aluno2.py` | Clima, percurso, unidades, coordenadas, arredondamento e falhas dos provedores |
+| `test_services_aluno1.py` | Autenticação Google, geocodificação e correção de UF (Aluno 1) |
+| `test_planejamento.py` | Limpeza do texto, sucesso da IA, contingências, diagnóstico, timeout e wrapper (Aluno 2) |
+| `test_services_aluno2.py` | Clima, percurso, unidades, coordenadas, arredondamento e falhas dos provedores (Aluno 2) |
+| `test_aluno3_backend_sessoes.py` | Rotas Flask, sessões, redirecionamentos e idempotência (Aluno 3) |
+| `test_aluno4_json.py` | Persistência por usuário, isolamento dos visitantes, arquivo corrompido e endpoint JSON (Aluno 4) |
 | `test_atalhos.py` | Saída das demonstrações, preservação da chave e códigos de retorno, com serviços simulados |
-| `README.md` | Detalhes e histórico das validações |
 
 Casos parametrizados aparecem como testes separados no relatório. Na última
-validação, **47 casos passaram**. Esse número pode aumentar conforme a suíte evolui.
+validação, **74 casos passaram**. Esse número pode aumentar conforme a suíte evolui.
+
+A suíte inclui testes unitários e testes de integração local com o cliente de
+testes do Flask. Os testes do Aluno 4 usam arquivos temporários, sem modificar a
+base real de viagens. Essas verificações não substituem os testes manuais no navegador
+com os provedores reais.
 
 ### `scripts/`: demonstrações manuais
 
@@ -114,9 +124,12 @@ task --list
 
 | Comando | O que executa |
 | --- | --- |
-| `task test-ia` | Testes automatizados de planejamento |
-| `task test-servicos` | Testes automatizados de clima e percurso |
-| `python -m pytest tests/test_atalhos.py` | Testes dos comandos de demonstração |
+| `task test-ia` | Testes automatizados de planejamento e fallback (Aluno 2) |
+| `task test-servicos` | Testes automatizados de clima e percurso (Aluno 2) |
+| `task test-auth` | Testes de autenticação Google e geocodificação (Aluno 1) |
+| `task test-backend` | Testes de rotas, sessões e proteções do backend (Aluno 3) |
+| `task test-json` | Testes de persistência, isolamento de visitantes e endpoint JSON (Aluno 4) |
+| `task test-atalhos` | Testes dos comandos de demonstração |
 | `task test -v` | Todos os casos com seus nomes detalhados |
 | `task test -q` | Relatório resumido |
 | `task test -x` | Para na primeira falha |
@@ -155,7 +168,7 @@ Preencha o arquivo `.env` local:
 
 ```dotenv
 GEMINI_API_KEY=SUA_CHAVE_REAL
-GEMINI_TIMEOUT_SEGUNDOS=60
+GEMINI_TIMEOUT_SEGUNDOS=6
 ```
 
 O `.env` é ignorado pelo Git. O `.env.example` deve conter somente exemplos,
@@ -177,10 +190,13 @@ O comando mostra o texto e o diagnóstico. `status: sucesso` e
 `fallback_utilizado: false` indicam que o guia veio da IA. Se houver contingência,
 o campo `motivo` informa a categoria da falha.
 
-A espera padrão é de 60 segundos, configurável até 120 segundos. O SDK usa
-timeout HTTP mínimo de 10 segundos. Para reproduzir o limite original da issue,
-defina `GEMINI_TIMEOUT_SEGUNDOS=6`; nesse caso o chamador pode retornar antes
-de a requisição HTTP terminar. Aumentar o timeout não garante sucesso do provedor.
+A espera padrão pela IA é de **6 segundos**. A configuração aceita valores maiores
+que zero e até **10 segundos**; valores inválidos retornam ao padrão de 6.
+Mantenha `GEMINI_TIMEOUT_SEGUNDOS=6` para cumprir o prazo original do trabalho.
+O código configura separadamente a requisição do SDK com 10 segundos, mas o
+chamador pode entregar o fallback aos 6 segundos sem esperar essa requisição terminar.
+Reinicie o servidor após alterar a configuração. O prazo da IA não representa
+o tempo total da página, que também consulta outros serviços.
 
 ## 8. Consultar clima e percurso reais
 
@@ -251,8 +267,7 @@ python -m ruff check .
 python -m mypy .
 ```
 
-Essas verificações analisam o projeto inteiro. Ainda existem pendências
-preexistentes em `app.py` e nas funções do Aluno 1 em `services.py`.
+Essas verificações analisam o projeto inteiro e informam as pendências atuais.
 Uma suíte pytest aprovada não significa que Ruff e Mypy também estejam aprovados.
 Os comandos mostram essas pendências sem ocultá-las ou apagar código.
 
@@ -285,5 +300,6 @@ Para consultar a ajuda dos parâmetros:
 python -m scripts.testar --help
 ```
 
-Os testes atuais verificam os módulos e os comandos descritos aqui. A demonstração
-na interface Flask ainda depende das rotas pendentes em `app.py`.
+Os testes atuais verificam os módulos, comandos e rotas descritos aqui. Para
+validar a experiência completa, execute também a aplicação e confira os fluxos
+no navegador; os testes automatizados não executam a interface JavaScript.

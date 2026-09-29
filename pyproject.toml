@@ -5,12 +5,16 @@ addopts = "-ra"
 
 [tool.taskipy.tasks]
 test = { cmd = "python -m pytest", help = "Executa todos os testes automatizados, sem acessar APIs" }
-test-ia = { cmd = "python -m pytest tests/test_planejamento.py", help = "Testa IA e contingência com respostas simuladas" }
-test-servicos = { cmd = "python -m pytest tests/test_services_aluno2.py", help = "Testa clima e percurso com respostas simuladas" }
+test-ia = { cmd = "python -m pytest tests/test_planejamento.py", help = "Testa IA e contingência com respostas simuladas (Aluno 2)" }
+test-servicos = { cmd = "python -m pytest tests/test_services_aluno2.py", help = "Testa clima e percurso com respostas simuladas (Aluno 2)" }
+test-auth = { cmd = "python -m pytest tests/test_services_aluno1.py", help = "Testa autenticacao Google e geocodificacao com respostas simuladas (Aluno 1)" }
+test-backend = { cmd = "python -m pytest tests/test_aluno3_backend_sessoes.py", help = "Testa rotas, sessoes e protecoes do backend (Aluno 3)" }
+test-json = { cmd = "python -m pytest tests/test_aluno4_json.py", help = "Testa persistencia, isolamento de visitantes e endpoint JSON (Aluno 4)" }
+test-atalhos = { cmd = "python -m pytest tests/test_atalhos.py", help = "Testa os comandos de demonstracao sem acessar APIs" }
 fallback = { cmd = "python -m scripts.testar fallback", help = "Mostra o guia de contingência sem alterar o .env ou acessar a API" }
 ia = { cmd = "python -m scripts.testar ia", help = "Consulta a IA real; aceita --destino e usa a chave do .env" }
 clima = { cmd = "python -m scripts.testar clima", help = "Consulta o clima real para as coordenadas informadas" }
 percurso = { cmd = "python -m scripts.testar percurso", help = "Consulta uma rota real entre as coordenadas informadas" }
 demo = { cmd = "python -m scripts.testar demo", help = "Mostra fallback, IA, clima e percurso; acessa APIs reais" }
-lint = { cmd = "python -m ruff check .", help = "Verifica o projeto inteiro, incluindo pendências dos outros alunos" }
+lint = { cmd = "python -m ruff check .", help = "Verifica estilo e qualidade do codigo com Ruff" }
 tipos = { cmd = "python -m mypy .", help = "Verifica os tipos do projeto inteiro" }

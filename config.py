@@ -14,13 +14,13 @@ PORT: int = 8001
 
 # Chaves e credenciais de integração externa
 GEMINI_KEY: str = os.getenv("GEMINI_API_KEY", "")
-# Tempo configurável; 6 s reproduz o limite original da issue.
+# Tempo configurável; padrão de 6 s conforme o limite original da issue.
 try:
-    GEMINI_TIMEOUT_SEGUNDOS = float(os.getenv("GEMINI_TIMEOUT_SEGUNDOS", "60"))
+    GEMINI_TIMEOUT_SEGUNDOS = float(os.getenv("GEMINI_TIMEOUT_SEGUNDOS", "6"))
 except ValueError:
-    GEMINI_TIMEOUT_SEGUNDOS = 60.0
-if not 0 < GEMINI_TIMEOUT_SEGUNDOS <= 120:
-    GEMINI_TIMEOUT_SEGUNDOS = 60.0
+    GEMINI_TIMEOUT_SEGUNDOS = 6.0
+if not 0 < GEMINI_TIMEOUT_SEGUNDOS <= 10:
+    GEMINI_TIMEOUT_SEGUNDOS = 6.0
 GOOGLE_CLIENT_ID: str = os.getenv(
     "GOOGLE_CLIENT_ID",
     "776335673676-dk7od4ljhh43bio4bppf94i8ou0u9v9i.apps.googleusercontent.com",
